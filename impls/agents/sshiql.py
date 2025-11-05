@@ -1,5 +1,6 @@
 from typing import Any
 
+import numpy as np
 import flax
 import flax.linen as nn
 import jax
@@ -9,14 +10,16 @@ import optax
 from utils.encoders import GCEncoder, encoder_modules
 from utils.flax_utils import ModuleDict, TrainState, nonpytree_field
 from utils.networks import MLP, GCActor, GCDiscreteActor, GCValue, Identity, LengthNormalize
+from sgstack.sgstack import SubgoalStack
 
 
-class HIQLAgent(flax.struct.PyTreeNode):
-    """Hierarchical implicit Q-learning (HIQL) agent."""
+class SSHIQLAgent(flax.struct.PyTreeNode):
+    """Subgoal Stacking Hierarchical implicit Q-learning (HIQL) agent."""
 
     rng: Any
     network: Any
     config: Any = nonpytree_field()
+    subgoal_stack: SubgoalStack  # Subgoal stack instance.
 
     @staticmethod
     def expectile_loss(adv, diff, expectile):
@@ -184,12 +187,31 @@ class HIQLAgent(flax.struct.PyTreeNode):
         goal_reps = high_dist.sample(seed=high_seed)
         goal_reps = goal_reps / jnp.linalg.norm(goal_reps, axis=-1, keepdims=True) * jnp.sqrt(goal_reps.shape[-1])
 
-        low_dist = self.network.select('low_actor')(observations, goal_reps, goal_encoded=True, temperature=temperature)
+        # ---- Subgoal Stacking Update ----#
+        new_subgoal = goal_reps[0]  # Get the first subgoal representation
+
+        # Update the subgoal stack with the new subgoal.
+        new_subgoal_stack = self.subgoal_stack.push(new_subgoal)
+
+        # Get the current subgoals for low-level actor.
+        current_stack_jnp = new_subgoal_stack.get_current_stack()
+
+        num_subgoals = current_stack_jnp.shape[0]
+        obs_repeated = jnp.repeat(observations, (num_subgoals, 1))
+
+        # Get actions!
+        low_dist = self.network.select("low_actor")(
+            obs_repeated, current_stack_jnp, goal_encoded=True, temperature=temperature
+        )
         actions = low_dist.sample(seed=low_seed)
+        # --------------------------------#
 
         if not self.config['discrete']:
             actions = jnp.clip(actions, -1, 1)
-        return actions
+
+        new_agent = self.replace(subgoal_stack=new_subgoal_stack)
+
+        return new_agent, actions, new_subgoal, current_stack_jnp
 
     @classmethod
     def create(
@@ -231,6 +253,12 @@ class HIQLAgent(flax.struct.PyTreeNode):
         )
         goal_rep_seq.append(LengthNormalize())
         goal_rep_def = nn.Sequential(goal_rep_seq)
+
+        # Create Subgoal Stack instance.
+        subgoal_stack = SubgoalStack.create(
+            max_size=config["subgoal_steps"],
+            subgoal_dim=config["rep_dim"],
+        )
 
         # Define the encoders that handle the inputs to the value and actor networks.
         # The subgoal representation phi([s; g]) is trained by the parameterized value function V(s, phi([s; g])).
@@ -313,7 +341,12 @@ class HIQLAgent(flax.struct.PyTreeNode):
         params = network.params
         params['modules_target_value'] = params['modules_value']
 
-        return cls(rng, network=network, config=flax.core.FrozenDict(**config))
+        return cls(
+            rng,
+            network=network,
+            config=flax.core.FrozenDict(**config),
+            subgoal_stack=subgoal_stack,  # Subgoal stack instance.
+        )
 
 
 def get_config():
