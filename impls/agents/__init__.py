@@ -6,6 +6,8 @@ from agents.hiql import HIQLAgent
 from agents.qrl import QRLAgent
 from agents.sac import SACAgent
 
+from agents.sshiql import SSHIQLAgent
+
 agents = dict(
     crl=CRLAgent,
     gcbc=GCBCAgent,
@@ -14,4 +16,5 @@ agents = dict(
     hiql=HIQLAgent,
     qrl=QRLAgent,
     sac=SACAgent,
+    sshiql=SSHIQLAgent,  # SSHIQL Agent
 )
