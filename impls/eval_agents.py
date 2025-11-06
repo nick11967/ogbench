@@ -98,7 +98,7 @@ def main(_):
     # Restore agent.
     if FLAGS.restore_path is not None:
         agent = restore_agent(agent, FLAGS.restore_path, FLAGS.restore_epoch)
-    
+
     # Evaluate for multiple seeds.
     all_seed_results = defaultdict(list)
     video_renders_for_wandb = []
@@ -113,9 +113,9 @@ def main(_):
 
         # Evaluate agent.
         if FLAGS.eval_on_cpu:
-            eval_agent = jax.device_put(agent, device=jax.devices('cpu')[0])
+            eval_agent = jax.device_put(current_agent, device=jax.devices("cpu")[0])
         else:
-            eval_agent = agent
+            eval_agent = current_agent
 
         renders = []
         task_infos = env.unwrapped.task_infos if hasattr(env.unwrapped, 'task_infos') else env.task_infos
@@ -124,17 +124,22 @@ def main(_):
         # Task loop.
         for task_id in tqdm.trange(1, num_tasks + 1):
             task_name = task_infos[task_id - 1]['task_name']
+            current_video_episodes = FLAGS.video_episodes if seed_idx == 0 else 0
             eval_info, trajs, cur_renders = evaluate(
                 agent=eval_agent,
                 env=env,
                 task_id=task_id,
                 config=config,
                 num_eval_episodes=FLAGS.eval_episodes,
-                num_video_episodes=FLAGS.video_episodes,
+                num_video_episodes=current_video_episodes,
                 video_frame_skip=FLAGS.video_frame_skip,
                 eval_temperature=FLAGS.eval_temperature,
                 eval_gaussian=FLAGS.eval_gaussian,
             )
+
+            if seed_idx == 0:
+                video_renders_for_wandb.extend(cur_renders)
+
             renders.extend(cur_renders)
             metric_names = ['success']
             for k, v in eval_info.items():
@@ -148,7 +153,7 @@ def main(_):
     for k in all_seed_results.keys():
         if 'overall_success' in k:
             overall_success_rates.extend(all_seed_results[k])
-        
+
         final_metrics[f'evaluation/{k}_mean'] = np.mean(all_seed_results[k])
 
     final_metrics['evaluation/mean_overall_success'] = np.mean(overall_success_rates)
@@ -158,7 +163,7 @@ def main(_):
     if FLAGS.video_episodes > 0 and len(video_renders_for_wandb) > 0:
         video = get_wandb_video(renders=video_renders_for_wandb, n_cols=num_tasks)
         final_metrics['video'] = video
-    
+
     wandb.log(final_metrics, step=0)
     eval_logger.log(final_metrics, step=0)
     eval_logger.close()

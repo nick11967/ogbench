@@ -202,7 +202,7 @@ class SSHIQLAgent(flax.struct.PyTreeNode):
         current_stack_jnp = new_subgoal_stack.get_current_stack()
 
         num_subgoals = current_stack_jnp.shape[0]
-        obs_repeated = jnp.repeat(observations, (num_subgoals, 1))
+        obs_repeated = jnp.repeat(observations, num_subgoals, axis=0)
 
         # Get actions!
         low_dist = self.network.select("low_actor")(
@@ -232,17 +232,20 @@ class SSHIQLAgent(flax.struct.PyTreeNode):
                 args[0], args[1], args[2], beta=similarity_beta
             )
 
+        def case_default(args):
+            return args[0][-1]
+
         mode_index = jnp.select(
             [
-                ensemble_mode == "average",
+                ensemble_mode == "mean",
                 ensemble_mode == "temporal",
                 ensemble_mode == "similarity",
             ],
             [0, 1, 2],
-            default=0,
+            default=3,
         )
 
-        branches = [case_mean, case_temporal, case_similarity]
+        branches = [case_mean, case_temporal, case_similarity, case_default]
 
         final_action = jax.lax.switch(
             mode_index, branches, (actions, current_stack_jnp, new_subgoal)
@@ -392,7 +395,7 @@ def get_config():
     config = ml_collections.ConfigDict(
         dict(
             # Agent hyperparameters.
-            agent_name='hiql',  # Agent name.
+            agent_name="sshiql",  # Agent name.
             lr=3e-4,  # Learning rate.
             batch_size=1024,  # Batch size.
             actor_hidden_dims=(512, 512, 512),  # Actor network hidden dimensions.
@@ -408,9 +411,11 @@ def get_config():
             low_actor_rep_grad=False,  # Whether low-actor gradients flow to goal representation (use True for pixels).
             const_std=True,  # Whether to use constant standard deviation for the actors.
             discrete=False,  # Whether the action space is discrete.
-            encoder=ml_collections.config_dict.placeholder(str),  # Visual encoder name (None, 'impala_small', etc.).
+            encoder=ml_collections.config_dict.placeholder(
+                str
+            ),  # Visual encoder name (None, 'impala_small', etc.).
             # Dataset hyperparameters.
-            dataset_class='HGCDataset',  # Dataset class name.
+            dataset_class="HGCDataset",  # Dataset class name.
             value_p_curgoal=0.2,  # Probability of using the current state as the value goal.
             value_p_trajgoal=0.5,  # Probability of using a future state in the same trajectory as the value goal.
             value_p_randomgoal=0.3,  # Probability of using a random state as the value goal.
@@ -421,7 +426,13 @@ def get_config():
             actor_geom_sample=False,  # Whether to use geometric sampling for future actor goals.
             gc_negative=True,  # Whether to use '0 if s == g else -1' (True) or '1 if s == g else 0' (False) as reward.
             p_aug=0.0,  # Probability of applying image augmentation.
-            frame_stack=ml_collections.config_dict.placeholder(int),  # Number of frames to stack.
+            frame_stack=ml_collections.config_dict.placeholder(
+                int
+            ),  # Number of frames to stack.
+            # SSHIQL-specific hyperparameters.
+            ensemble_mode="mean",
+            temporal_decay_rate=0.5,
+            similarity_beta=5.0,
         )
     )
     return config

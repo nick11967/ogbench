@@ -78,6 +78,9 @@ def evaluate(
         render = []
         while not done:
             action = actor_fn(observations=observation, goals=goal, temperature=eval_temperature)
+            if isinstance(action, tuple) and len(action) == 2:
+                new_agent, action = action
+                agent = new_agent
             action = np.array(action)
             if not config.get('discrete'):
                 if eval_gaussian is not None:
