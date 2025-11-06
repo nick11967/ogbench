@@ -11,6 +11,11 @@ from utils.encoders import GCEncoder, encoder_modules
 from utils.flax_utils import ModuleDict, TrainState, nonpytree_field
 from utils.networks import MLP, GCActor, GCDiscreteActor, GCValue, Identity, LengthNormalize
 from sgstack.sgstack import SubgoalStack
+from sgstack.action_ensemble import (
+    average_actions,
+    temporal_ensemble,
+    weighted_average_similarity,
+)
 
 
 class SSHIQLAgent(flax.struct.PyTreeNode):
@@ -209,9 +214,43 @@ class SSHIQLAgent(flax.struct.PyTreeNode):
         if not self.config['discrete']:
             actions = jnp.clip(actions, -1, 1)
 
+        # ---- Ensemble Actions ---- #
+        ensemble_mode = self.config["ensemble_mode"]
+
+        # hyperparameters
+        temporal_decay_rate = self.config.get("temporal_decay_rate", 0.5)
+        similarity_beta = self.config.get("similarity_beta", 5.0)
+
+        def case_mean(args):
+            return average_actions(args[0])
+
+        def case_temporal(args):
+            return temporal_ensemble(args[0], decay_rate=temporal_decay_rate)
+
+        def case_similarity(args):
+            return weighted_average_similarity(
+                args[0], args[1], args[2], beta=similarity_beta
+            )
+
+        mode_index = jnp.select(
+            [
+                ensemble_mode == "average",
+                ensemble_mode == "temporal",
+                ensemble_mode == "similarity",
+            ],
+            [0, 1, 2],
+            default=0,
+        )
+
+        branches = [case_mean, case_temporal, case_similarity]
+
+        final_action = jax.lax.switch(
+            mode_index, branches, (actions, current_stack_jnp, new_subgoal)
+        )
+
         new_agent = self.replace(subgoal_stack=new_subgoal_stack)
 
-        return new_agent, actions, new_subgoal, current_stack_jnp
+        return new_agent, final_action
 
     @classmethod
     def create(
