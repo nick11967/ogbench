@@ -62,15 +62,6 @@ def main(_):
     if FLAGS.restore_path is None:
         raise ValueError('restore_path must be specified for evaluation.')
 
-    # Set up logger.
-    exp_name = get_exp_name(FLAGS.seed)
-    setup_wandb(
-        entity="nick11967-seoul-national-university",
-        project="Eval_Agents",
-        group=FLAGS.run_group,
-        name=f"Eval_{os.path.basename(FLAGS.restore_path)}_{FLAGS.ensemble_mode}",
-    )
-
     # Load flags.
     train_flag_path = os.path.join(FLAGS.restore_path, "flags.json")
     config = FLAGS.agent  # Current configDict copy.
@@ -85,9 +76,16 @@ def main(_):
             current_config_dict = config.to_dict()
             config_from_train = train_flag_dict["agent"]
             current_config_dict.update(config_from_train)
-            config = ConfigDict(current_config_dict)
-            config.update(FLAGS.agent)
-            FLAGS.agent = config
+            FLAGS.agent = ConfigDict(current_config_dict)
+
+    # Set up logger.
+    exp_name = get_exp_name(FLAGS.seed)
+    setup_wandb(
+        entity="nick11967-seoul-national-university",
+        project="Eval_Agents",
+        group=FLAGS.run_group,
+        name=f"Eval_{os.path.basename(FLAGS.restore_path)}_{FLAGS.ensemble_mode}",
+    )
 
     # Save flags.
     FLAGS.save_dir = os.path.join(FLAGS.save_dir, wandb.run.project, FLAGS.run_group, exp_name)
@@ -137,6 +135,9 @@ def main(_):
     # Evaluation loop.
     eval_logger = CsvLogger(os.path.join(FLAGS.save_dir, 'eval.csv'))
 
+    total_success = 0
+    total_episodes = 0
+
     # Evaluate multiple seeds.
     for seed_idx in tqdm.trange(FLAGS.num_eval_seeds, desc="Running Multiple Seeds..."):
         current_seed = FLAGS.seed + seed_idx
@@ -151,7 +152,9 @@ def main(_):
         num_tasks = FLAGS.eval_tasks if FLAGS.eval_tasks is not None else len(task_infos)
 
         # Task loop.
-        for task_id in tqdm.trange(1, num_tasks + 1):
+        for task_id in tqdm.trange(
+            1, num_tasks + 1, desc=f"Seed {current_seed} Evaluating Tasks..."
+        ):
             task_name = task_infos[task_id - 1]["task_name"]
             eval_info, trajs, cur_renders = evaluate(
                 agent=eval_agent,
@@ -178,6 +181,8 @@ def main(_):
             for k, v in eval_info.items():
                 if k in metric_names:
                     overall_metrics[k].append(v)
+                    total_success += v * FLAGS.eval_episodes
+                    total_episodes += FLAGS.eval_episodes
 
         for k, v in overall_metrics.items():
             eval_metrics[f"overall_{k}"] = np.mean(v)
@@ -197,6 +202,11 @@ def main(_):
 
         wandb.log(eval_metrics, step=seed_idx)
         eval_logger.log(eval_metrics, step=seed_idx)
+
+    total_success_rate = total_success / total_episodes if total_episodes > 0 else 0.0
+
+    wandb.log({"total_success_rate": total_success_rate})
+    eval_logger.log({"total_success_rate": total_success_rate})
 
     eval_logger.close()
 
