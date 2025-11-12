@@ -6,6 +6,8 @@ dist/
 .DS_Store
 .idea/
 .ruff_cache/
+
 .venv/
-exp/
 .env
+exp/
+eval/

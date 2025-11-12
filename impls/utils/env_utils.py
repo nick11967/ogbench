@@ -76,7 +76,7 @@ class FrameStackWrapper(gymnasium.Wrapper):
         return self.get_observation(), reward, terminated, truncated, info
 
 
-def make_env_and_datasets(dataset_name, frame_stack=None):
+def make_env_and_datasets(dataset_name, frame_stack=None, env_only=False):
     """Make OGBench environment and datasets.
 
     Args:
@@ -87,7 +87,15 @@ def make_env_and_datasets(dataset_name, frame_stack=None):
         A tuple of the environment, training dataset, and validation dataset.
     """
     # Use compact dataset to save memory.
-    env, train_dataset, val_dataset = ogbench.make_env_and_datasets(dataset_name, compact_dataset=True)
+    if env_only:
+        env = ogbench.make_env_and_datasets(
+            dataset_name, compact_dataset=True, env_only=env_only
+        )
+        return env
+
+    env, train_dataset, val_dataset = ogbench.make_env_and_datasets(
+        dataset_name, compact_dataset=True, env_only=env_only
+    )
     train_dataset = Dataset.create(**train_dataset)
     val_dataset = Dataset.create(**val_dataset)
 

@@ -5,6 +5,7 @@ from datetime import datetime
 import absl.flags as flags
 import ml_collections
 import numpy as np
+import imageio.v3 as iio
 import wandb
 from PIL import Image, ImageEnhance
 
@@ -113,15 +114,7 @@ def reshape_video(v, n_cols=None):
     return v
 
 
-def get_wandb_video(renders=None, n_cols=None, fps=15):
-    """Return a Weights & Biases video.
-
-    It takes a list of videos and reshapes them into a single video with the specified number of columns.
-
-    Args:
-        renders: List of videos. Each video should be a numpy array of shape (t, h, w, c).
-        n_cols: Number of columns for the reshaped video. If None, it is set to the square root of the number of videos.
-    """
+def process_and_reshape_videos(renders, n_cols):
     # Pad videos to the same length.
     max_length = max([len(render) for render in renders])
     for i, render in enumerate(renders):
@@ -143,4 +136,47 @@ def get_wandb_video(renders=None, n_cols=None, fps=15):
 
     renders = reshape_video(renders, n_cols)  # (t, c, nr * h, nc * w)
 
+    return renders
+
+
+def get_wandb_video(renders=None, n_cols=None, fps=15):
+    """Return a Weights & Biases video.
+
+    It takes a list of videos and reshapes them into a single video with the specified number of columns.
+
+    Args:
+        renders: List of videos. Each video should be a numpy array of shape (t, h, w, c).
+        n_cols: Number of columns for the reshaped video. If None, it is set to the square root of the number of videos.
+    """
+
+    renders = process_and_reshape_videos(renders, n_cols)
+
     return wandb.Video(renders, fps=fps, format='mp4')
+
+
+def save_video(renders, path, n_cols=None, fps=15):
+    """Save a video to the specified path.
+
+    Works similarly to get_wandb_video, but saves the video locally using imageio.
+
+    Args:
+        renders: List of videos. Each video should be a numpy array of shape (t, h, w, c).
+        path: Path to save the video.
+        n_cols: Number of columns for the reshaped video. If None, it is set to the square root of the number of videos.
+        fps: Frames per second for the saved video.
+    """
+    renders = process_and_reshape_videos(renders, n_cols)
+    frames_for_saving = np.transpose(renders, (0, 2, 3, 1))
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        iio.imwrite(
+            path,
+            frames_for_saving,
+            fps=fps,
+            codec="libx264",
+            quality=8,
+            pixelformat="yuv420p",  # Most players support this format
+        )
+        print(f"Video successfully saved to: {path}")
+    except Exception as e:
+        print(f"Error saving video to {path}: {e}")
