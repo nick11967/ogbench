@@ -20,6 +20,8 @@ from utils.evaluation import evaluate
 from utils.flax_utils import restore_agent, save_agent
 from utils.log_utils import CsvLogger, get_exp_name, get_flag_dict, get_wandb_video, setup_wandb
 
+import setproctitle
+
 FLAGS = flags.FLAGS
 
 flags.DEFINE_string('run_group', 'Debug', 'Run group.')
@@ -50,7 +52,7 @@ def main(_):
     exp_name = get_exp_name(FLAGS.seed)
     setup_wandb(
         entity="nick11967-seoul-national-university",
-        project='SSHIQL', group=FLAGS.run_group, name=exp_name
+        project='OGBench', group=FLAGS.run_group, name=exp_name
     )
 
     FLAGS.save_dir = os.path.join(FLAGS.save_dir, wandb.run.project, FLAGS.run_group, exp_name)
@@ -62,6 +64,9 @@ def main(_):
     # Set up environment and dataset.
     config = FLAGS.agent
     env, train_dataset, val_dataset = make_env_and_datasets(FLAGS.env_name, frame_stack=config['frame_stack'])
+
+    proc_title = f"ryujm-ogbench"
+    setproctitle.setproctitle(proc_title)
 
     dataset_class = {
         'GCDataset': GCDataset,
