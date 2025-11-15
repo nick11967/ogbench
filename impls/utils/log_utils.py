@@ -167,6 +167,21 @@ def save_video(renders, path, n_cols=None, fps=15):
     """
     renders = process_and_reshape_videos(renders, n_cols)
     frames_for_saving = np.transpose(renders, (0, 2, 3, 1))
+
+    _, h, w, _ = frames_for_saving.shape
+    mbs = 16  # macro block size
+
+    pad_h = (mbs - (h % mbs)) % mbs
+    pad_w = (mbs - (w % mbs)) % mbs
+
+    if pad_h > 0 or pad_w > 0:
+        frames_for_saving = np.pad(
+            frames_for_saving,
+            ((0, 0), (0, pad_h), (0, pad_w), (0, 0)),
+            mode="constant",
+            constant_values=0,
+        )
+
     try:
         os.makedirs(os.path.dirname(path), exist_ok=True)
         iio.imwrite(

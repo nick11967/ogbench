@@ -1,6 +1,5 @@
 from typing import Any
 
-import numpy as np
 import flax
 import flax.linen as nn
 import jax

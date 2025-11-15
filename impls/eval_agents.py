@@ -1,7 +1,6 @@
 import json
 import os
 import random
-import time
 from collections import defaultdict
 from dotenv import load_dotenv
 
@@ -14,7 +13,6 @@ import wandb
 from absl import app, flags
 from agents import agents
 from ml_collections import config_flags, ConfigDict
-from utils.datasets import Dataset, GCDataset, HGCDataset
 from utils.env_utils import make_env_and_datasets
 from utils.evaluation import evaluate
 from utils.flax_utils import restore_agent
@@ -76,26 +74,32 @@ def main(_):
             current_config_dict = config.to_dict()
             config_from_train = train_flag_dict["agent"]
             current_config_dict.update(config_from_train)
+            if FLAGS.agent.agent_name == "sshiql":
+                current_config_dict["agent_name"] = "sshiql"
             FLAGS.agent = ConfigDict(current_config_dict)
 
+    # When SSHIQL
+    if FLAGS.agent.agent_name == "sshiql":
+        wandb_name = os.path.basename(FLAGS.restore_path) + "ss"
+    else:
+        wandb_name = os.path.basename(FLAGS.restore_path)
     # Set up logger.
     exp_name = get_exp_name(FLAGS.seed)
     setup_wandb(
         entity="nick11967-seoul-national-university",
         project="Eval_Agents",
         group=FLAGS.run_group,
-        name=f"Eval_{os.path.basename(FLAGS.restore_path)}_{FLAGS.ensemble_mode}",
+        name=wandb_name,
     )
 
     # Save flags.
-    FLAGS.save_dir = os.path.join(FLAGS.save_dir, wandb.run.project, FLAGS.run_group, exp_name)
+    FLAGS.save_dir = os.path.join(FLAGS.save_dir, wandb.run.project, exp_name)
     os.makedirs(FLAGS.save_dir, exist_ok=True)
     flag_dict = get_flag_dict()
     with open(os.path.join(FLAGS.save_dir, 'flags.json'), 'w') as f:
         json.dump(flag_dict, f)
 
     # Set up environment and dataset.
-    # TODO: Load only the first batch for creating the agent.
     config = FLAGS.agent
     env = make_env_and_datasets(
         FLAGS.env_name, frame_stack=config["frame_stack"], env_only=True
@@ -118,7 +122,7 @@ def main(_):
         config,
     )
 
-    # Restore agent.
+    # Set target device for evaluation.
     if FLAGS.eval_on_cpu:
         target_device = jax.devices("cpu")[0]
         print("Evaluation will run on CPU.")
@@ -129,6 +133,7 @@ def main(_):
         target_device = jax.devices("cpu")[0]
         print("GPU not found. Evaluation will run on CPU.")
 
+    # Restore agent.
     agent = restore_agent(agent, FLAGS.restore_path, FLAGS.restore_epoch)
     agent = jax.device_put(agent, target_device)
 
@@ -206,7 +211,11 @@ def main(_):
     total_success_rate = total_success / total_episodes if total_episodes > 0 else 0.0
 
     wandb.log({"total_success_rate": total_success_rate})
-    eval_logger.log({"total_success_rate": total_success_rate})
+    wandb.summary["total_success_rate"] = total_success_rate
+    eval_logger.log(
+        {"total_success_rate": total_success_rate},
+        step=FLAGS.seed + FLAGS.num_eval_seeds,
+    )
 
     eval_logger.close()
 

@@ -65,8 +65,17 @@ def evaluate(
     trajs = []
     stats = defaultdict(list)
 
+    IS_SSHIQL = hasattr(agent, "subgoal_stack")
+
     renders = []
     for i in trange(num_eval_episodes + num_video_episodes):
+        if IS_SSHIQL:
+            agent = agent.replace(
+                subgoal_stack=agent.subgoal_stack.__class__.create(
+                    max_size=agent.subgoal_stack.max_size,
+                    subgoal_dim=agent.subgoal_stack.subgoal_dim,
+                )
+            )
         traj = defaultdict(list)
         should_render = i >= num_eval_episodes
 
@@ -78,7 +87,7 @@ def evaluate(
         render = []
         while not done:
             action = actor_fn(observations=observation, goals=goal, temperature=eval_temperature)
-            if isinstance(action, tuple) and len(action) == 2:
+            if IS_SSHIQL:
                 new_agent, action = action
                 agent = new_agent
             action = np.array(action)
