@@ -16,6 +16,13 @@ def supply_rng(f, rng=jax.random.PRNGKey(0)):
     return wrapped
 
 
+def actor_function_with_rng(agent, observations, goals, temperature, seed):
+    """Actor function that takes in a RNG key."""
+    return agent.sample_actions(
+        observations=observations, goals=goals, temperature=temperature, seed=seed
+    )
+
+
 def flatten(d, parent_key='', sep='.'):
     """Flatten a dictionary."""
     items = []
@@ -44,6 +51,7 @@ def evaluate(
     video_frame_skip=3,
     eval_temperature=0,
     eval_gaussian=None,
+    debug_level=0,
 ):
     """Evaluate the agent in the environment.
 
@@ -61,7 +69,9 @@ def evaluate(
     Returns:
         A tuple containing the statistics, trajectories, and rendered videos.
     """
-    actor_fn = supply_rng(agent.sample_actions, rng=jax.random.PRNGKey(np.random.randint(0, 2**32)))
+    actor_fn_with_rng = supply_rng(
+        actor_function_with_rng, rng=jax.random.PRNGKey(np.random.randint(0, 2**32))
+    )
     trajs = []
     stats = defaultdict(list)
 
@@ -86,15 +96,29 @@ def evaluate(
         step = 0
         render = []
         while not done:
-            action = actor_fn(observations=observation, goals=goal, temperature=eval_temperature)
+            if debug_level >= 1:
+                print(f"\n----- Step {step} -----")
+            action = actor_fn_with_rng(
+                agent=agent,
+                observations=observation,
+                goals=goal,
+                temperature=eval_temperature,
+            )
             if IS_SSHIQL:
                 new_agent, action = action
                 agent = new_agent
+                if debug_level >= 2:
+                    print(
+                        f"Step: {step}, Subgoal Stack Size: {agent.subgoal_stack.size}"
+                    )
             action = np.array(action)
             if not config.get('discrete'):
                 if eval_gaussian is not None:
                     action = np.random.normal(action, eval_gaussian)
                 action = np.clip(action, -1, 1)
+
+            if debug_level >= 1:
+                print(f"Step: {step}, Action: {action}")
 
             next_observation, reward, terminated, truncated, info = env.step(action)
             done = terminated or truncated

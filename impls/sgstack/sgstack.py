@@ -4,7 +4,7 @@ import flax.struct
 
 
 class SubgoalStack(flax.struct.PyTreeNode):
-    """A stack to hold subgoals for hierarchical RL agents."""
+    """A queue to hold subgoals for hierarchical RL agents."""
 
     stack: jnp.ndarray
     size: int
@@ -26,7 +26,8 @@ class SubgoalStack(flax.struct.PyTreeNode):
         """Push a new subgoal and return a new SubgoalStack."""
         is_full = self.size >= self.max_size
 
-        # Roll the stack if it's full
+        # Roll(shift) the stack by 1 if it's full
+        # It works like pop
         rolled_stack = jax.lax.cond(
             is_full,
             lambda s: jnp.roll(s, shift=-1, axis=0),

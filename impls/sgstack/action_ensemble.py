@@ -29,9 +29,10 @@ def temporal_ensemble(
     max_size = mask.shape[0]
 
     indices_full = jnp.arange(max_size, dtype=jnp.float32)
+    indices_reverse = jnp.flip(indices_full, axis=0)
 
     # Exponential decay weights
-    weights = jnp.exp(indices_full * decay_rate)
+    weights = jnp.exp(-indices_reverse * decay_rate)
     weights = weights * mask  # Apply mask
     weights_sum = jnp.sum(weights)
     weights = weights / jnp.maximum(weights_sum, 1e-6)  # Normalize weights

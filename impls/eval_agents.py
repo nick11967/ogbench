@@ -101,7 +101,7 @@ def main(_):
     if FLAGS.debug_level == 0:
         FLAGS.save_dir = os.path.join(FLAGS.save_dir, wandb.run.project, exp_name)
     else:
-        FLAGS.save_dir = os.paht.join(FLAGS.save_dir, "Debug", exp_name)
+        FLAGS.save_dir = os.path.join(FLAGS.save_dir, "Debug", exp_name)
     os.makedirs(FLAGS.save_dir, exist_ok=True)
     flag_dict = get_flag_dict()
     with open(os.path.join(FLAGS.save_dir, 'flags.json'), 'w') as f:
@@ -109,6 +109,7 @@ def main(_):
 
     # Set up environment and dataset.
     config = FLAGS.agent
+    config["ensemble_mode"] = FLAGS.ensemble_mode
     env = make_env_and_datasets(
         FLAGS.env_name, frame_stack=config["frame_stack"], env_only=True
     )
@@ -123,6 +124,8 @@ def main(_):
     np.random.seed(FLAGS.seed)
 
     agent_class = agents[config['agent_name']]
+    if FLAGS.debug_level >= 1:
+        print(f"Ensemble Mode: {config['ensemble_mode']}")
     agent = agent_class.create(
         FLAGS.seed,
         ex_observation,
@@ -184,6 +187,7 @@ def main(_):
                 video_frame_skip=FLAGS.video_frame_skip,
                 eval_temperature=FLAGS.eval_temperature,
                 eval_gaussian=FLAGS.eval_gaussian,
+                debug_level=FLAGS.debug_level,
             )
 
             renders.extend(cur_renders)
@@ -210,14 +214,13 @@ def main(_):
                 # Log video to wandb.
                 video = get_wandb_video(renders=renders, n_cols=num_tasks)
                 eval_metrics["video"] = video
-
-            # Save video locally.
-            video_dir = os.path.join(FLAGS.save_dir, "videos")
-            os.makedirs(video_dir, exist_ok=True)
-            video_filename = f"s{seed_idx:02d}.mp4"
-            video_path = os.path.join(video_dir, video_filename)
-            save_video(renders=renders, path=video_path, n_cols=num_tasks)
-
+            else:
+                # Save video locally.
+                video_dir = os.path.join(FLAGS.save_dir, "videos")
+                os.makedirs(video_dir, exist_ok=True)
+                video_filename = f"s{seed_idx:02d}.mp4"
+                video_path = os.path.join(video_dir, video_filename)
+                save_video(renders=renders, path=video_path, n_cols=num_tasks)
         if FLAGS.debug_level == 0:
             wandb.log(eval_metrics, step=seed_idx)
         eval_logger.log(eval_metrics, step=seed_idx)

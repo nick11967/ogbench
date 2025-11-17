@@ -198,8 +198,6 @@ class SSHIQLAgent(flax.struct.PyTreeNode):
         # Get the current subgoals for low-level actor.
         current_stack_jnp = new_subgoal_stack.get_current_stack()  # (25, 10)
 
-        # observations: (29, )
-
         active_subgoal_num = current_stack_jnp.shape[0]  # 25
         obs_batch = (
             jnp.expand_dims(observations, axis=0)
@@ -252,8 +250,8 @@ class SSHIQLAgent(flax.struct.PyTreeNode):
         branches = [case_mean, case_temporal, case_similarity, case_default]
 
         # Masking acitons
-        indices = jnp.arange(self.subgoal_stack.max_size)
-        mask = (indices < self.subgoal_stack.size).astype(jnp.float32)
+        indices = jnp.arange(new_subgoal_stack.max_size)
+        mask = (indices < new_subgoal_stack.size).astype(jnp.float32)
 
         final_action = jax.lax.switch(
             mode_index, branches, (actions, mask, current_stack_jnp, goal_reps)
