@@ -188,20 +188,25 @@ class SSHIQLAgent(flax.struct.PyTreeNode):
         high_seed, low_seed = jax.random.split(seed)
 
         high_dist = self.network.select('high_actor')(observations, goals, temperature=temperature)
-        goal_reps = high_dist.sample(seed=high_seed)
+        goal_reps = high_dist.sample(seed=high_seed)  # (10, )
         goal_reps = goal_reps / jnp.linalg.norm(goal_reps, axis=-1, keepdims=True) * jnp.sqrt(goal_reps.shape[-1])
 
         # ---- Subgoal Stacking Update ----#
-        new_subgoal = goal_reps[0]  # Get the first subgoal representation
-
         # Update the subgoal stack with the new subgoal.
-        new_subgoal_stack = self.subgoal_stack.push(new_subgoal)
+        new_subgoal_stack = self.subgoal_stack.push(goal_reps)
 
         # Get the current subgoals for low-level actor.
-        current_stack_jnp = new_subgoal_stack.get_current_stack()
+        current_stack_jnp = new_subgoal_stack.get_current_stack()  # (25, 10)
 
-        num_subgoals = current_stack_jnp.shape[0]
-        obs_repeated = jnp.repeat(observations, num_subgoals, axis=0)
+        # observations: (29, )
+
+        active_subgoal_num = current_stack_jnp.shape[0]  # 25
+        obs_batch = (
+            jnp.expand_dims(observations, axis=0)
+            if observations.ndim == 1
+            else observations
+        )  # (1, 29)
+        obs_repeated = jnp.repeat(obs_batch, active_subgoal_num, axis=0)
 
         # Get actions!
         low_dist = self.network.select("low_actor")(
@@ -221,14 +226,14 @@ class SSHIQLAgent(flax.struct.PyTreeNode):
         similarity_beta = self.config.get("similarity_beta", 5.0)
 
         def case_mean(args):
-            return average_actions(args[0])
+            return average_actions(args[0], args[1])
 
         def case_temporal(args):
-            return temporal_ensemble(args[0], decay_rate=temporal_decay_rate)
+            return temporal_ensemble(args[0], args[1], decay_rate=temporal_decay_rate)
 
         def case_similarity(args):
             return weighted_average_similarity(
-                args[0], args[1], args[2], beta=similarity_beta
+                args[0], args[1], args[2], args[3], beta=similarity_beta
             )
 
         def case_default(args):
@@ -246,8 +251,12 @@ class SSHIQLAgent(flax.struct.PyTreeNode):
 
         branches = [case_mean, case_temporal, case_similarity, case_default]
 
+        # Masking acitons
+        indices = jnp.arange(self.subgoal_stack.max_size)
+        mask = (indices < self.subgoal_stack.size).astype(jnp.float32)
+
         final_action = jax.lax.switch(
-            mode_index, branches, (actions, current_stack_jnp, new_subgoal)
+            mode_index, branches, (actions, mask, current_stack_jnp, goal_reps)
         )
 
         new_agent = self.replace(subgoal_stack=new_subgoal_stack)

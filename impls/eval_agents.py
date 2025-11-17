@@ -15,7 +15,7 @@ from agents import agents
 from ml_collections import config_flags, ConfigDict
 from utils.env_utils import make_env_and_datasets
 from utils.evaluation import evaluate
-from utils.flax_utils import restore_agent
+from utils.flax_utils import restore_agent, restore_agent_network_only
 from utils.log_utils import (
     CsvLogger,
     get_exp_name,
@@ -53,6 +53,10 @@ flags.DEFINE_string(
     "ensemble_mode", "temporal", "Action ensemble mode: mean, temporal, similarity"
 )
 
+flags.DEFINE_integer(
+    "debug_level", 0, "Debug level. 0: no debug, 1: light debug, 2: full debug."
+)
+
 config_flags.DEFINE_config_file('agent', 'agents/hiql.py', lock_config=False)
 
 
@@ -85,15 +89,19 @@ def main(_):
         wandb_name = os.path.basename(FLAGS.restore_path)
     # Set up logger.
     exp_name = get_exp_name(FLAGS.seed)
-    setup_wandb(
-        entity="nick11967-seoul-national-university",
-        project="Eval_Agents",
-        group=FLAGS.run_group,
-        name=wandb_name,
-    )
+    if FLAGS.debug_level == 0:
+        setup_wandb(
+            entity="nick11967-seoul-national-university",
+            project="Eval_Agents",
+            group=FLAGS.run_group,
+            name=wandb_name,
+        )
 
     # Save flags.
-    FLAGS.save_dir = os.path.join(FLAGS.save_dir, wandb.run.project, exp_name)
+    if FLAGS.debug_level == 0:
+        FLAGS.save_dir = os.path.join(FLAGS.save_dir, wandb.run.project, exp_name)
+    else:
+        FLAGS.save_dir = os.paht.join(FLAGS.save_dir, "Debug", exp_name)
     os.makedirs(FLAGS.save_dir, exist_ok=True)
     flag_dict = get_flag_dict()
     with open(os.path.join(FLAGS.save_dir, 'flags.json'), 'w') as f:
@@ -134,7 +142,12 @@ def main(_):
         print("GPU not found. Evaluation will run on CPU.")
 
     # Restore agent.
-    agent = restore_agent(agent, FLAGS.restore_path, FLAGS.restore_epoch)
+    if config["agent_name"] == "sshiql":
+        agent = restore_agent_network_only(
+            agent, FLAGS.restore_path, FLAGS.restore_epoch
+        )
+    else:
+        agent = restore_agent(agent, FLAGS.restore_path, FLAGS.restore_epoch)
     agent = jax.device_put(agent, target_device)
 
     # Evaluation loop.
@@ -193,7 +206,7 @@ def main(_):
             eval_metrics[f"overall_{k}"] = np.mean(v)
 
         if FLAGS.video_episodes > 0:
-            if FLAGS.video_to_wandb:
+            if FLAGS.video_to_wandb and FLAGS.debug_level == 0:
                 # Log video to wandb.
                 video = get_wandb_video(renders=renders, n_cols=num_tasks)
                 eval_metrics["video"] = video
@@ -205,13 +218,15 @@ def main(_):
             video_path = os.path.join(video_dir, video_filename)
             save_video(renders=renders, path=video_path, n_cols=num_tasks)
 
-        wandb.log(eval_metrics, step=seed_idx)
+        if FLAGS.debug_level == 0:
+            wandb.log(eval_metrics, step=seed_idx)
         eval_logger.log(eval_metrics, step=seed_idx)
 
     total_success_rate = total_success / total_episodes if total_episodes > 0 else 0.0
 
-    wandb.log({"total_success_rate": total_success_rate})
-    wandb.summary["total_success_rate"] = total_success_rate
+    if FLAGS.debug_level == 0:
+        wandb.log({"total_success_rate": total_success_rate})
+        wandb.summary["total_success_rate"] = total_success_rate
     eval_logger.log(
         {"total_success_rate": total_success_rate},
         step=FLAGS.seed + FLAGS.num_eval_seeds,

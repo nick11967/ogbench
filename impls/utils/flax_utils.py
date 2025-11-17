@@ -200,3 +200,48 @@ def restore_agent(agent, restore_path, restore_epoch):
     print(f'Restored from {restore_path}')
 
     return agent
+
+
+def restore_agent_network_only(agent, restore_path, restore_epoch):
+    """Restore only the network parameters of the agent from a file.
+    Only for SSHIQLAgent.
+
+    Args:
+        agent: SSHIQLAgent.
+        restore_path: Path to the directory containing the saved agent.
+        restore_epoch: Epoch number.
+    """
+    # TODO
+    candidates = glob.glob(restore_path)
+
+    assert len(candidates) == 1, f"Found {len(candidates)} candidates: {candidates}"
+
+    restore_path = candidates[0] + f"/params_{restore_epoch}.pkl"
+
+    with open(restore_path, "rb") as f:
+        load_dict = pickle.load(f)
+
+    loaded_state = load_dict.get("agent", load_dict)
+
+    if not isinstance(loaded_state, dict):
+        print("Error: Loaded state is not a dictionary.")
+        return agent
+
+    if "network" not in loaded_state:
+        print("Error: 'network' key not found in loaded state.")
+        return agent
+
+    restored_network_state = loaded_state["network"]
+
+    if "params" not in restored_network_state:
+        print("Error: 'params' key not found in restored network state.")
+        return agent
+
+    restored_params = restored_network_state["params"]
+
+    new_params = flax.serialization.from_state_dict(
+        agent.network.params, restored_params
+    )
+    new_network = agent.network.replace(params=new_params)
+    new_agent = agent.replace(network=new_network)
+    return new_agent

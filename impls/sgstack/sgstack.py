@@ -53,5 +53,5 @@ class SubgoalStack(flax.struct.PyTreeNode):
         return self.replace(stack=new_stack, size=new_size)
 
     def get_current_stack(self):
-        """Get the current subgoal stack up to the current size."""
-        return self.stack[: self.size]
+        """Get the current subgoal stack up to the max size."""
+        return self.stack
