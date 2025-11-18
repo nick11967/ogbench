@@ -25,6 +25,9 @@ from utils.log_utils import (
     save_video,
 )
 
+import setproctitle
+setproctitle.setproctitle("ryujm-og-eval")
+
 FLAGS = flags.FLAGS
 
 flags.DEFINE_string('run_group', 'Eval', 'Run group.')
