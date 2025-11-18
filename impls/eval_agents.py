@@ -18,7 +18,6 @@ from utils.evaluation import evaluate
 from utils.flax_utils import restore_agent, restore_agent_network_only
 from utils.log_utils import (
     CsvLogger,
-    get_exp_name,
     get_flag_dict,
     get_wandb_video,
     setup_wandb,
@@ -83,28 +82,40 @@ def main(_):
             current_config_dict.update(config_from_train)
             if FLAGS.agent.agent_name == "sshiql":
                 current_config_dict["agent_name"] = "sshiql"
+                current_config_dict["ensemble_mode"] = FLAGS.ensemble_mode
             FLAGS.agent = ConfigDict(current_config_dict)
 
-    # When SSHIQL
-    if FLAGS.agent.agent_name == "sshiql":
-        wandb_name = os.path.basename(FLAGS.restore_path) + "ss"
-    else:
-        wandb_name = os.path.basename(FLAGS.restore_path)
+    # Set run name for wandb logging.
+    env_name_mappings = {
+        "antmaze": "Ant",
+        "humanoidmaze": "Humanoid",
+        "pointmaze": "Point",
+    }
+    env_name = FLAGS.env_name.split("-")[0]
+    env_name_short = env_name_mappings.get(env_name, env_name)
+    size_name_mapping = {"medium": "Med", "large": "Lar", "giant": "Gia"}
+    size_tag = FLAGS.env_name.split("-")[1]
+    size_name_short = size_name_mapping.get(size_tag, size_tag)
+    train_seed = FLAGS.restore_path.split("/")[-1].split("_")[0]
+
+    run_name = (
+        f"{env_name_short}_{size_name_short}_{FLAGS.agent.agent_name}_{train_seed}"
+    )
+
     # Set up logger.
-    exp_name = get_exp_name(FLAGS.seed)
     if FLAGS.debug_level == 0:
         setup_wandb(
             entity="nick11967-seoul-national-university",
             project="Eval_Agents",
             group=FLAGS.run_group,
-            name=wandb_name,
+            name=run_name,
         )
 
     # Save flags.
     if FLAGS.debug_level == 0:
-        FLAGS.save_dir = os.path.join(FLAGS.save_dir, wandb.run.project, exp_name)
+        FLAGS.save_dir = os.path.join(FLAGS.save_dir, wandb.run.project, run_name)
     else:
-        FLAGS.save_dir = os.path.join(FLAGS.save_dir, "Debug", exp_name)
+        FLAGS.save_dir = os.path.join(FLAGS.save_dir, "Debug", run_name)
     os.makedirs(FLAGS.save_dir, exist_ok=True)
     flag_dict = get_flag_dict()
     with open(os.path.join(FLAGS.save_dir, 'flags.json'), 'w') as f:
