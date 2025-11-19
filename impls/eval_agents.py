@@ -42,8 +42,8 @@ flags.DEFINE_float('eval_temperature', 0, 'Actor temperature for evaluation.')
 flags.DEFINE_float('eval_gaussian', None, 'Action Gaussian noise for evaluation.')
 flags.DEFINE_integer('video_episodes', 1, 'Number of video episodes for each task.')
 flags.DEFINE_integer('video_frame_skip', 3, 'Frame skip for videos.')
-flags.DEFINE_integer("video_to_wandb", 0, "Whether to save videos to Weights & Biases.")
-flags.DEFINE_integer('eval_on_cpu', 1, 'Whether to evaluate on CPU.')
+flags.DEFINE_integer("video_to_wandb", 1, "Whether to save videos to Weights & Biases.")
+flags.DEFINE_integer('eval_on_cpu', 0, 'Whether to evaluate on CPU.')
 flags.DEFINE_string("proc_name", "ryujm-og-eval", "Process names.")
 
 # Evaluation over multiple seeds.
@@ -103,7 +103,7 @@ def main(_):
         if ensemble_name_short == 'Temp':
             run_name = run_name + f'_{FLAGS.agent.temporal_decay_rate}'
         elif ensemble_name_short == 'Simi':
-            run_name = run_name + f'_{FLAGS.similarity_beta}'
+            run_name = run_name + f'_{FLAGS.agent.similarity_beta}'
 
     run_name = run_name + f"_{train_seed}"
 
