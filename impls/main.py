@@ -44,6 +44,10 @@ flags.DEFINE_integer('video_episodes', 1, 'Number of video episodes for each tas
 flags.DEFINE_integer('video_frame_skip', 3, 'Frame skip for videos.')
 flags.DEFINE_integer('eval_on_cpu', 1, 'Whether to evaluate on CPU.')
 
+# SSHIQL specific flags.
+flags.DEFINE_integer('stack_max_size', 25, 'Max size of the Subgoal Stack.')
+flags.DEFINE_string('ensemble_mode', 'mean', 'Action ensemble mode: mean, temporal, similarity')
+
 flags.DEFINE_string('proc_name', 'ryujm-ogbench-train', 'Process name.')
 
 config_flags.DEFINE_config_file('agent', 'agents/gciql.py', lock_config=False)

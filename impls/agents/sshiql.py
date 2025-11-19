@@ -249,7 +249,7 @@ class SSHIQLAgent(flax.struct.PyTreeNode):
 
         branches = [case_mean, case_temporal, case_similarity, case_default]
 
-        # Masking acitons
+        # Masking actions
         indices = jnp.arange(new_subgoal_stack.max_size)
         mask = (indices < new_subgoal_stack.size).astype(jnp.float32)
 
@@ -304,7 +304,7 @@ class SSHIQLAgent(flax.struct.PyTreeNode):
 
         # Create Subgoal Stack instance.
         subgoal_stack = SubgoalStack.create(
-            max_size=config["subgoal_steps"],
+            max_size=config["stack_max_size"],
             subgoal_dim=config["rep_dim"],
         )
 
@@ -436,9 +436,11 @@ def get_config():
                 int
             ),  # Number of frames to stack.
             # SSHIQL-specific hyperparameters.
-            ensemble_mode="mean",
-            temporal_decay_rate=0.5,
-            similarity_beta=5.0,
+            stack_max_size = 25, # Max size of the Subgoal Stack.
+            ensemble_mode="mean", # Action ensemble mode. mean / temporal / similarity
+            temporal_decay_rate=0.5, # Temporal ensemble mode hyperparameter.
+            similarity_beta=5.0, # Similarity ensemble mode hyperparameter.
+            subgoal_pruning=False, # Whether to apply Subgoal Pruning when push.
         )
     )
     return config

@@ -50,6 +50,7 @@ flags.DEFINE_integer(
     "num_eval_seeds", 5, "Number of different seeds to run evaluation."
 )
 # SSHIQL specific flags.
+flags.DEFINE_integer('stack_max_size', 25, 'Max size of the Subgoal Stack.')
 flags.DEFINE_string(
     "ensemble_mode", "temporal", "Action ensemble mode: mean, temporal, similarity"
 )
@@ -134,6 +135,7 @@ def main(_):
     # Set up environment and dataset.
     config = FLAGS.agent
     config["ensemble_mode"] = FLAGS.ensemble_mode
+    config["stack_max_size"] = FLAGS.stack_max_size
     env = make_env_and_datasets(
         FLAGS.env_name, frame_stack=config["frame_stack"], env_only=True
     )
