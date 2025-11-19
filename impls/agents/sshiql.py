@@ -217,7 +217,7 @@ class SSHIQLAgent(flax.struct.PyTreeNode):
             actions = jnp.clip(actions, -1, 1)
 
         # ---- Ensemble Actions ---- #
-        ensemble_mode = self.config["ensemble_mode"]
+        action_ensemble_mode = self.config.get("ensemble_mode", "mean")
 
         # hyperparameters
         temporal_decay_rate = self.config.get("temporal_decay_rate", 0.5)
@@ -239,9 +239,9 @@ class SSHIQLAgent(flax.struct.PyTreeNode):
 
         mode_index = jnp.select(
             [
-                ensemble_mode == "mean",
-                ensemble_mode == "temporal",
-                ensemble_mode == "similarity",
+                action_ensemble_mode == "mean",
+                action_ensemble_mode == "temporal",
+                action_ensemble_mode == "similarity",
             ],
             [0, 1, 2],
             default=3,

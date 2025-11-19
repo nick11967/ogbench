@@ -42,12 +42,7 @@ flags.DEFINE_float('eval_temperature', 0, 'Actor temperature for evaluation.')
 flags.DEFINE_float('eval_gaussian', None, 'Action Gaussian noise for evaluation.')
 flags.DEFINE_integer('video_episodes', 1, 'Number of video episodes for each task.')
 flags.DEFINE_integer('video_frame_skip', 3, 'Frame skip for videos.')
-flags.DEFINE_integer('eval_on_cpu', 1, 'Whether to evaluate on CPU.')
-
-# SSHIQL specific flags.
-flags.DEFINE_integer('stack_max_size', 25, 'Max size of the Subgoal Stack.')
-flags.DEFINE_string('ensemble_mode', 'mean', 'Action ensemble mode: mean, temporal, similarity')
-
+flags.DEFINE_integer("eval_on_cpu", 1, "Whether to evaluate on CPU.")
 flags.DEFINE_string('proc_name', 'ryujm-ogbench-train', 'Process name.')
 
 config_flags.DEFINE_config_file('agent', 'agents/gciql.py', lock_config=False)
@@ -63,6 +58,7 @@ def main(_):
         project='OGBench', group=FLAGS.run_group, name=exp_name
     )
 
+    # Save flags.
     FLAGS.save_dir = os.path.join(FLAGS.save_dir, wandb.run.project, FLAGS.run_group, exp_name)
     os.makedirs(FLAGS.save_dir, exist_ok=True)
     flag_dict = get_flag_dict()

@@ -44,19 +44,13 @@ flags.DEFINE_integer('video_episodes', 1, 'Number of video episodes for each tas
 flags.DEFINE_integer('video_frame_skip', 3, 'Frame skip for videos.')
 flags.DEFINE_integer("video_to_wandb", 0, "Whether to save videos to Weights & Biases.")
 flags.DEFINE_integer('eval_on_cpu', 1, 'Whether to evaluate on CPU.')
+flags.DEFINE_string("proc_name", "ryujm-og-eval", "Process names.")
 
 # Evaluation over multiple seeds.
 flags.DEFINE_integer(
     "num_eval_seeds", 5, "Number of different seeds to run evaluation."
 )
-# SSHIQL specific flags.
-flags.DEFINE_integer('stack_max_size', 25, 'Max size of the Subgoal Stack.')
-flags.DEFINE_string(
-    "ensemble_mode", "temporal", "Action ensemble mode: mean, temporal, similarity"
-)
-
 flags.DEFINE_integer("debug_level", 0, "Debug level.")
-flags.DEFINE_string("proc_name", "ryujm-og-eval", "Process names.")
 
 config_flags.DEFINE_config_file('agent', 'agents/hiql.py', lock_config=False)
 
@@ -82,7 +76,6 @@ def main(_):
             current_config_dict.update(config_from_train)
             if FLAGS.agent.agent_name == "sshiql":
                 current_config_dict["agent_name"] = "sshiql"
-                current_config_dict["ensemble_mode"] = FLAGS.ensemble_mode
             FLAGS.agent = ConfigDict(current_config_dict)
 
     # Set run name for wandb logging.
@@ -104,7 +97,8 @@ def main(_):
 
     if config["agent_name"] == "sshiql":
         ensemble_mapping = {"mean": "Mean", "temporal": "Temp", "similarity": "Simi"}
-        ensemble_name_short = ensemble_mapping.get(FLAGS.ensemble_mode, FLAGS.ensemble_mode)
+        ensemble_mode = FLAGS.agent.ensemble_mode
+        ensemble_name_short = ensemble_mapping.get(ensemble_mode, ensemble_mode)
         run_name = run_name + f"_{ensemble_name_short}"
         if ensemble_name_short == 'Temp':
             run_name = run_name + f'_{FLAGS.agent.temporal_decay_rate}'
@@ -134,8 +128,6 @@ def main(_):
 
     # Set up environment and dataset.
     config = FLAGS.agent
-    config["ensemble_mode"] = FLAGS.ensemble_mode
-    config["stack_max_size"] = FLAGS.stack_max_size
     env = make_env_and_datasets(
         FLAGS.env_name, frame_stack=config["frame_stack"], env_only=True
     )
