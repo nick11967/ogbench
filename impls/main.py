@@ -44,10 +44,14 @@ flags.DEFINE_integer('video_episodes', 1, 'Number of video episodes for each tas
 flags.DEFINE_integer('video_frame_skip', 3, 'Frame skip for videos.')
 flags.DEFINE_integer('eval_on_cpu', 1, 'Whether to evaluate on CPU.')
 
+flags.DEFINE_string('proc_name', 'ryujm-ogbench-train', 'Process name.')
+
 config_flags.DEFINE_config_file('agent', 'agents/gciql.py', lock_config=False)
 
 
 def main(_):
+    setproctitle.setproctitle(FLAGS.proc_name)
+
     # Set up logger.
     exp_name = get_exp_name(FLAGS.seed)
     setup_wandb(
@@ -64,9 +68,6 @@ def main(_):
     # Set up environment and dataset.
     config = FLAGS.agent
     env, train_dataset, val_dataset = make_env_and_datasets(FLAGS.env_name, frame_stack=config['frame_stack'])
-
-    proc_title = f"ryujm-ogbench"
-    setproctitle.setproctitle(proc_title)
 
     dataset_class = {
         'GCDataset': GCDataset,

@@ -1,0 +1,8 @@
+python eval_sim.py --restore_path="./exp/train/sd005_20251115_232840" --agent=agents/sshiql.py --eval_on_cpu=0 --ensemble_mode="temporal" --agent.temporal_decay_rate=0.2 --video_to_wandb=1 ; \
+python eval_sim.py --restore_path="./exp/train/sd005_20251115_232840" --agent=agents/sshiql.py --eval_on_cpu=0 --ensemble_mode="temporal" --agent.temporal_decay_rate=0.4 --video_to_wandb=1 ; \
+python eval_sim.py --restore_path="./exp/train/sd005_20251115_232840" --agent=agents/sshiql.py --eval_on_cpu=0 --ensemble_mode="temporal" --agent.temporal_decay_rate=0.6 --video_to_wandb=1 ; \
+python eval_sim.py --restore_path="./exp/train/sd005_20251115_232840" --agent=agents/sshiql.py --eval_on_cpu=0 --ensemble_mode="temporal" --agent.temporal_decay_rate=0.8 --video_to_wandb=1 ; \
+python eval_sim.py --restore_path="./exp/train/sd005_20251115_232840" --agent=agents/sshiql.py --eval_on_cpu=0 --ensemble_mode="temporal" --agent.temporal_decay_rate=0.9 --video_to_wandb=1 ; \
+python eval_sim.py --restore_path="./exp/train/sd005_20251115_232840" --agent=agents/sshiql.py --eval_on_cpu=0 --ensemble_mode="temporal" --agent.temporal_decay_rate=0.95 --video_to_wandb=1 ; \
+python eval_sim.py --restore_path="./exp/train/sd005_20251115_232840" --agent=agents/sshiql.py --eval_on_cpu=0 --ensemble_mode="temporal" --agent.temporal_decay_rate=0.99 --video_to_wandb=1 ; \
+python eval_sim.py --restore_path="./exp/train/sd005_20251115_232840" --agent=agents/sshiql.py --eval_on_cpu=0 --ensemble_mode="temporal" --agent.temporal_decay_rate=0.995 --video_to_wandb=1 ; \

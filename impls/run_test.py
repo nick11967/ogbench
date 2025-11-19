@@ -3,7 +3,7 @@ import os
 import subprocess
 
 # --- config ---
-CSV_FILE = 'train_result.csv'
+CSV_FILE = 'train_result_giant.csv'
 BASE_DIR = './exp/train/'
 EVAL_SCRIPT = 'python eval_agents.py'
 AGENT_FILE = 'agents/sshiql.py'

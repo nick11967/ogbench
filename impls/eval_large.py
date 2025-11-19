@@ -6,11 +6,15 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+device = "cuda:5"
+os.environ["MUJOCO_GL"] = "egl"
+os.environ["CUDA_VISIBLE_DEVICES"] = device[-1]
+os.environ["MUJOCO_EGL_DEVICE_ID"] = device[-1]
+
 import jax
 import numpy as np
 import tqdm
 import wandb
-import setproctitle
 from absl import app, flags
 from agents import agents
 from ml_collections import config_flags, ConfigDict
@@ -25,6 +29,8 @@ from utils.log_utils import (
     save_video,
 )
 
+import setproctitle
+setproctitle.setproctitle("ryujm-og-eval-large")
 
 FLAGS = flags.FLAGS
 
@@ -54,14 +60,14 @@ flags.DEFINE_string(
     "ensemble_mode", "temporal", "Action ensemble mode: mean, temporal, similarity"
 )
 
-flags.DEFINE_integer("debug_level", 0, "Debug level.")
-flags.DEFINE_string("proc_name", "ryujm-og-eval", "Process names.")
+flags.DEFINE_integer(
+    "debug_level", 0, "Debug level. 0: no debug, 1: light debug, 2: full debug."
+)
 
 config_flags.DEFINE_config_file('agent', 'agents/hiql.py', lock_config=False)
 
 
 def main(_):
-    setproctitle.setproctitle(FLAGS.proc_name)
     if FLAGS.restore_path is None:
         raise ValueError('restore_path must be specified for evaluation.')
 
@@ -98,19 +104,8 @@ def main(_):
     train_seed = FLAGS.restore_path.split("/")[-1].split("_")[0]
 
     run_name = (
-        f"{env_name_short}_{size_name_short}_{FLAGS.agent.agent_name}"
+        f"{env_name_short}_{size_name_short}_{FLAGS.agent.agent_name}_{train_seed}"
     )
-
-    if config["agent_name"] == "sshiql":
-        ensemble_mapping = {"mean": "Mean", "temporal": "Temp", "similarity": "Simi"}
-        ensemble_name_short = ensemble_mapping.get(FLAGS.ensemble_mode, FLAGS.ensemble_mode)
-        run_name = run_name + f"_{ensemble_name_short}"
-        if ensemble_name_short == 'Temp':
-            run_name = run_name + f'_{FLAGS.agent.temporal_decay_rate}'
-        elif ensemble_name_short == 'Simi':
-            run_name = run_name + f'_{FLAGS.similarity_beta}'
-
-    run_name = run_name + f"_{train_seed}"
 
     # Set up logger.
     if FLAGS.debug_level == 0:
