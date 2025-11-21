@@ -6,15 +6,11 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-device = "cuda:6"
-os.environ["MUJOCO_GL"] = "egl"
-os.environ["CUDA_VISIBLE_DEVICES"] = device[-1]
-os.environ["MUJOCO_EGL_DEVICE_ID"] = device[-1]
-
 import jax
 import numpy as np
 import tqdm
 import wandb
+import setproctitle
 from absl import app, flags
 from agents import agents
 from ml_collections import config_flags, ConfigDict
@@ -29,15 +25,13 @@ from utils.log_utils import (
     save_video,
 )
 
-import setproctitle
-setproctitle.setproctitle("ryujm-og-eval-giant")
 
 FLAGS = flags.FLAGS
 
-flags.DEFINE_string('run_group', 'Eval', 'Run group.')
+flags.DEFINE_string('run_group', 'Test', 'Run group.')
 flags.DEFINE_integer('seed', 0, 'Random seed.')
 flags.DEFINE_string('env_name', 'antmaze-large-navigate-v0', 'Environment (dataset) name.')
-flags.DEFINE_string('save_dir', 'eval/', 'Save directory.')
+flags.DEFINE_string('save_dir', 'test/', 'Save directory.')
 # Need to specify restore_path and restore_epoch for evaluation.
 flags.DEFINE_string('restore_path', None, 'Restore path.')
 flags.DEFINE_integer("restore_epoch", 1000000, "Restore epoch.")
@@ -48,26 +42,21 @@ flags.DEFINE_float('eval_temperature', 0, 'Actor temperature for evaluation.')
 flags.DEFINE_float('eval_gaussian', None, 'Action Gaussian noise for evaluation.')
 flags.DEFINE_integer('video_episodes', 1, 'Number of video episodes for each task.')
 flags.DEFINE_integer('video_frame_skip', 3, 'Frame skip for videos.')
-flags.DEFINE_integer("video_to_wandb", 0, "Whether to save videos to Weights & Biases.")
-flags.DEFINE_integer('eval_on_cpu', 1, 'Whether to evaluate on CPU.')
+flags.DEFINE_integer("video_to_wandb", 1, "Whether to save videos to Weights & Biases.")
+flags.DEFINE_integer('eval_on_cpu', 0, 'Whether to evaluate on CPU.')
+flags.DEFINE_string("proc_name", "ryujm-og-eval", "Process names.")
 
 # Evaluation over multiple seeds.
 flags.DEFINE_integer(
     "num_eval_seeds", 5, "Number of different seeds to run evaluation."
 )
-# SSHIQL specific flags.
-flags.DEFINE_string(
-    "ensemble_mode", "temporal", "Action ensemble mode: mean, temporal, similarity"
-)
-
-flags.DEFINE_integer(
-    "debug_level", 0, "Debug level. 0: no debug, 1: light debug, 2: full debug."
-)
+flags.DEFINE_integer("debug_level", 0, "Debug level.")
 
 config_flags.DEFINE_config_file('agent', 'agents/hiql.py', lock_config=False)
 
 
 def main(_):
+    setproctitle.setproctitle(FLAGS.proc_name)
     if FLAGS.restore_path is None:
         raise ValueError('restore_path must be specified for evaluation.')
 
@@ -87,7 +76,6 @@ def main(_):
             current_config_dict.update(config_from_train)
             if FLAGS.agent.agent_name == "sshiql":
                 current_config_dict["agent_name"] = "sshiql"
-                current_config_dict["ensemble_mode"] = FLAGS.ensemble_mode
             FLAGS.agent = ConfigDict(current_config_dict)
 
     # Set run name for wandb logging.
@@ -104,14 +92,26 @@ def main(_):
     train_seed = FLAGS.restore_path.split("/")[-1].split("_")[0]
 
     run_name = (
-        f"{env_name_short}_{size_name_short}_{FLAGS.agent.agent_name}_{train_seed}"
+        f"{env_name_short}_{size_name_short}_{FLAGS.agent.agent_name}"
     )
+
+    if config["agent_name"] == "sshiql":
+        ensemble_mapping = {"mean": "Mean", "temporal": "Temp", "similarity": "Simi"}
+        ensemble_mode = FLAGS.agent.ensemble_mode
+        ensemble_name_short = ensemble_mapping.get(ensemble_mode, ensemble_mode)
+        run_name = run_name + f"_{ensemble_name_short}"
+        if ensemble_name_short == 'Temp':
+            run_name = run_name + f'_{FLAGS.agent.temporal_decay_rate}'
+        elif ensemble_name_short == 'Simi':
+            run_name = run_name + f'_{FLAGS.agent.similarity_beta}'
+
+    run_name = run_name + f"_{train_seed}"
 
     # Set up logger.
     if FLAGS.debug_level == 0:
         setup_wandb(
             entity="nick11967-seoul-national-university",
-            project="Eval_Agents",
+            project="SSHIQL_TEST",
             group=FLAGS.run_group,
             name=run_name,
         )
@@ -128,7 +128,6 @@ def main(_):
 
     # Set up environment and dataset.
     config = FLAGS.agent
-    config["ensemble_mode"] = FLAGS.ensemble_mode
     env = make_env_and_datasets(
         FLAGS.env_name, frame_stack=config["frame_stack"], env_only=True
     )

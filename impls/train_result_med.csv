@@ -1,8 +1,0 @@
-,Name,eval/overall_suc,agent.agent_name,env_name,State,Runtime,Created,agent.subgoal_steps,seed,time/epoch_time,evaluation/task1_success,evaluation/task2_success,evaluation/task3_success,evaluation/task4_success,evaluation/task5_success,time/total_time,eval_temperature
-2,sd005_20251116_112018,0.936,hiql,humanoidmaze-medium-navigate-v0,finished,20957,2025-11-16T02:20:20.000Z,100,5,0.008929806423187256,0.96,0.98,0.92,0.86,0.96,20087.073130369183,0
-1,sd006_20251116_015801,0.892,hiql,humanoidmaze-medium-navigate-v0,finished,7263,2025-11-15T16:58:02.000Z,100,6,0.0035434163570404052,0.92,0.96,0.9,0.72,0.96,6970.880274772644,0
-2,sd003_20251115_213634,0.932,hiql,humanoidmaze-medium-navigate-v0,finished,20400,2025-11-15T12:36:36.000Z,100,3,0.008694123363494873,1,1,0.8,0.86,1,19547.763466358185,0
-1,sd004_20251115_212409,0.864,hiql,humanoidmaze-medium-navigate-v0,finished,7464,2025-11-15T12:24:11.000Z,100,4,0.003445068311691284,0.94,0.94,0.74,0.74,0.96,6985.408179283142,0
-2,sd002_20251115_063254,0.888,hiql,humanoidmaze-medium-navigate-v0,finished,21724,2025-11-14T21:32:55.000Z,100,2,0.008641790628433227,0.96,1,0.86,0.7,0.92,20725.693453788757,0
-2,sd001_20251114_222944,0.916,hiql,humanoidmaze-medium-navigate-v0,finished,22304,2025-11-14T13:29:46.000Z,100,1,0.00873144874572754,0.94,0.98,0.9,0.8,0.96,21292.055297613144,0
-

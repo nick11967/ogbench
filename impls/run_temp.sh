@@ -1,1 +1,0 @@
-python eval_agents.py --restore_path="./exp/train/sd005_20251115_232840" --agent=agents/sshiql.py --eval_on_cpu=0 --agent.ensemble_mode="temporal" --agent.temporal_decay_rate=0.2 --agent.stack_max_size=100 --proc_name="ryujm-temp-0.2" --video_to_wandb=1
