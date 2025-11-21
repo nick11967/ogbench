@@ -37,7 +37,7 @@ flags.DEFINE_string('restore_path', None, 'Restore path.')
 flags.DEFINE_integer("restore_epoch", 1000000, "Restore epoch.")
 
 flags.DEFINE_integer('eval_tasks', None, 'Number of tasks to evaluate (None for all).')
-flags.DEFINE_integer('eval_episodes', 20, 'Number of episodes for each task.')
+flags.DEFINE_integer('eval_episodes', 10, 'Number of episodes for each task.')
 flags.DEFINE_float('eval_temperature', 0, 'Actor temperature for evaluation.')
 flags.DEFINE_float('eval_gaussian', None, 'Action Gaussian noise for evaluation.')
 flags.DEFINE_integer('video_episodes', 1, 'Number of video episodes for each task.')
@@ -48,7 +48,7 @@ flags.DEFINE_string("proc_name", "ryujm-og-eval", "Process names.")
 
 # Evaluation over multiple seeds.
 flags.DEFINE_integer(
-    "num_eval_seeds", 5, "Number of different seeds to run evaluation."
+    "num_eval_seeds", 3, "Number of different seeds to run evaluation."
 )
 flags.DEFINE_integer("debug_level", 0, "Debug level.")
 

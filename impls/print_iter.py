@@ -11,10 +11,10 @@ AGENT_FILE = 'agents/sshiql.py'
 
 
 # test_name = "mean"
-test_name = "temporal"
+# test_name = "temporal"
 # test_name = "similarity"
 # test_name = "stack-size"
-# test_name = "ss-sim"
+test_name = "ss-sim"
 
 ckpts = [
     'sd003_20251120_074529', # Point-Med
@@ -26,7 +26,8 @@ ckpts = [
     ]
 temp_decay_rate = [0.95, 0.9, 0.8]
 sim_beta = [7, 5, 4]
-stack_size = [4, 8, 16, 32, 64, 128]
+# stack_size = [4, 8, 16, 32, 64, 128]
+stack_size = [64, 128]
 
 
 for ckpt in ckpts:
