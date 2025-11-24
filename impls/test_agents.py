@@ -19,6 +19,7 @@ from utils.evaluation import evaluate
 from utils.flax_utils import restore_agent, restore_agent_network_only
 from utils.log_utils import (
     CsvLogger,
+    get_exp_name,
     get_flag_dict,
     get_wandb_video,
     setup_wandb,
@@ -44,7 +45,7 @@ flags.DEFINE_integer('video_episodes', 1, 'Number of video episodes for each tas
 flags.DEFINE_integer('video_frame_skip', 3, 'Frame skip for videos.')
 flags.DEFINE_integer("video_to_wandb", 1, "Whether to save videos to Weights & Biases.")
 flags.DEFINE_integer('eval_on_cpu', 0, 'Whether to evaluate on CPU.')
-flags.DEFINE_string("proc_name", "ryujm-og-eval", "Process names.")
+flags.DEFINE_string("proc_name", "ryujm-og-test", "Process names.")
 
 # Evaluation over multiple seeds.
 flags.DEFINE_integer(
@@ -78,34 +79,7 @@ def main(_):
                 current_config_dict["agent_name"] = "sshiql"
             FLAGS.agent = ConfigDict(current_config_dict)
 
-    # Set run name for wandb logging.
-    env_name_mappings = {
-        "antmaze": "Ant",
-        "humanoidmaze": "Hum",
-        "pointmaze": "Poi",
-    }
-    env_name = FLAGS.env_name.split("-")[0]
-    env_name_short = env_name_mappings.get(env_name, env_name)
-    size_name_mapping = {"medium": "Med", "large": "Lar", "giant": "Gia"}
-    size_tag = FLAGS.env_name.split("-")[1]
-    size_name_short = size_name_mapping.get(size_tag, size_tag)
-    train_seed = FLAGS.restore_path.split("/")[-1].split("_")[0]
-
-    run_name = (
-        f"{env_name_short}_{size_name_short}_{FLAGS.agent.agent_name}"
-    )
-
-    if config["agent_name"] == "sshiql":
-        ensemble_mapping = {"mean": "Mean", "temporal": "Temp", "similarity": "Simi"}
-        ensemble_mode = FLAGS.agent.ensemble_mode
-        ensemble_name_short = ensemble_mapping.get(ensemble_mode, ensemble_mode)
-        run_name = run_name + f"_{ensemble_name_short}"
-        if ensemble_name_short == 'Temp':
-            run_name = run_name + f'_{FLAGS.agent.temporal_decay_rate}'
-        elif ensemble_name_short == 'Simi':
-            run_name = run_name + f'_{FLAGS.agent.similarity_beta}'
-
-    run_name = run_name + f"_{train_seed}"
+    run_name = get_exp_name(FLAGS.seed)
 
     # Set up logger.
     if FLAGS.debug_level == 0:
@@ -120,7 +94,7 @@ def main(_):
     if FLAGS.debug_level == 0:
         FLAGS.save_dir = os.path.join(FLAGS.save_dir, wandb.run.project, run_name)
     else:
-        FLAGS.save_dir = os.path.join(FLAGS.save_dir, "Debug", run_name)
+        FLAGS.save_dir = os.path.join(FLAGS.save_dir, run_name)
     os.makedirs(FLAGS.save_dir, exist_ok=True)
     flag_dict = get_flag_dict()
     with open(os.path.join(FLAGS.save_dir, 'flags.json'), 'w') as f:
@@ -172,7 +146,7 @@ def main(_):
     agent = jax.device_put(agent, target_device)
 
     # Evaluation loop.
-    eval_logger = CsvLogger(os.path.join(FLAGS.save_dir, 'eval.csv'))
+    eval_logger = CsvLogger(os.path.join(FLAGS.save_dir, 'test.csv'))
 
     total_success = 0
     total_episodes = 0

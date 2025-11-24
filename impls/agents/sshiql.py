@@ -436,7 +436,7 @@ def get_config():
                 int
             ),  # Number of frames to stack.
             # SSHIQL-specific hyperparameters.
-            stack_max_size = 25, # Max size of the Subgoal Stack.
+            stack_max_size = 16, # Max size of the Subgoal Stack.
             ensemble_mode="mean", # Action ensemble mode. mean / temporal / similarity
             temporal_decay_rate=0.5, # Temporal ensemble mode hyperparameter.
             similarity_beta=5.0, # Similarity ensemble mode hyperparameter.
