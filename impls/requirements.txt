@@ -1,7 +1,7 @@
 # ogbench  # Use the PyPI version of OGBench. Replace this with `pip install -e .` if you want to use the local version.
 -e .
 jax[cuda12] == 0.4.26 # jax[cuda12] for computer with GPU.
-jaxlib == 0.4.26 # Unless, pip install 0.8.0 or latest.
+# jaxlib == 0.4.26 # Unless, pip install 0.8.0 or latest.
 flax >= 0.8.4
 distrax >= 0.1.5
 ml_collections
