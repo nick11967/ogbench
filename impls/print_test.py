@@ -31,8 +31,8 @@ def run_evaluation_scripts():
         restore_path = os.path.join(BASE_DIR, name)
 
         PROC_NAME = 'Hum_'
-        stack_max_size = 8
-        similarity_beta = 4
+        stack_max_size = 4
+        similarity_beta = 7
 
         # Env Size
         if index < 3:
@@ -66,8 +66,8 @@ def run_evaluation_scripts():
             f'--agent.similarity_beta={similarity_beta} '
             f'--proc_name="{PROC_NAME+'SS+Simi'}" ; \\'
         )
-        print(command_base)
-        print(command_temp)
+        # print(command_base)
+        # print(command_temp)
         print(command_simi)
 
 if __name__ == "__main__":
