@@ -66,7 +66,7 @@ def get_statistic():
             print("Failed to process test.csv for: ", row['Name'])
             continue
     
-    print(f'        {"HIQL":^12} {"SS+Temp":^12}{"SS+Sim":^10}')
+    # print(f'        {"HIQL":^12} {"SS+Temp":^12}{"SS+Sim":^10}') # Terminal Ver.
     for robot_key, robot_idx in idx_map_robot.items():
         for size_key, size_idx in idx_map_size.items():
             avg_list = []
@@ -82,13 +82,17 @@ def get_statistic():
                     # print(f"{robot_key}_{size_key}_{method_key:7}: {avg_success:.1f} ± {std:.1f} over {count} runs")
                 # else:
                     # print(f"{robot_key}_{size_key}_{method_key}: No data available.")
-            print(f"{robot_key}-{size_key}: ", end="")
+            # print(f"{robot_key}-{size_key}: ", end="") # Terminal Ver.
             max_avg = max(avg_list)
             for i, avg in enumerate(avg_list):
                 if avg >= max_avg * 0.95:
-                    print(f"\033[1m{avg:.1f}\033[0m ± {std_list[i]:<4.1f} ", end="")
+                    stat = f'& $\\bm{{ {avg:.1f} \\pm {std_list[i]:>4.1f} }}$'
+                    print(f'{stat:<30}', end="")
+                    # print(f"\033[1m{avg:.1f}\033[0m ± {std_list[i]:>4.1f} ", end="") # Terminal Ver.
                 else:
-                    print(f"{avg:.1f} ± {std_list[i]:<4.1f} ", end="")
+                    stat = f'& ${avg:.1f} \\pm {std_list[i]:>4.1f}$'
+                    print(f'{stat:<30}', end="")
+                    # print(f"{avg:.1f} ± {std_list[i]:<4.1f} ", end="") # Terminal Ver.
             print()
 
 
