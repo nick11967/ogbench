@@ -1,0 +1,5 @@
+python test_agents.py --restore_path="./exp/OGBench/Debug/sd004_20251126_093813" --agent="agents/sshiql.py" --agent.stack_max_size=16 --agent.ensemble_mode="temporal" --agent.temporal_decay_rate=0.99 --proc_name="Hum_Med_SS+Temp" ; \
+python test_agents.py --restore_path="./exp/OGBench/Debug/sd001_20251124_230009" --agent="agents/sshiql.py" --agent.stack_max_size=16 --agent.ensemble_mode="temporal" --agent.temporal_decay_rate=0.95 --proc_name="Hum_Gia_SS+Temp" ; \
+python test_agents.py --restore_path="./exp/OGBench/Debug/sd004_20251126_093813" --agent="agents/sshiql.py" --agent.stack_max_size=16 --agent.ensemble_mode="temporal" --agent.temporal_decay_rate=0.8 --proc_name="Hum_Med_SS+Temp" ; \
+python test_agents.py --restore_path="./exp/OGBench/Debug/sd003_20251126_093943" --agent="agents/sshiql.py" --agent.stack_max_size=16 --agent.ensemble_mode="temporal" --agent.temporal_decay_rate=0.7 --proc_name="Hum_Lar_SS+Temp" ; \
+python test_agents.py --restore_path="./exp/OGBench/Debug/sd001_20251124_230009" --agent="agents/sshiql.py" --agent.stack_max_size=16 --agent.ensemble_mode="temporal" --agent.temporal_decay_rate=0.5 --proc_name="Hum_Gia_SS+Temp" ; \

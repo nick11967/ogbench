@@ -1,10 +1,10 @@
 import os
 from tqdm import tqdm
 
-def distribute_commands(input_file="command.txt", output_files=["run42.sh", "run52.sh", "run62.sh", "run72.sh"]):
+def distribute_commands(input_file="command.txt", output_files=["run45.sh", "run55.sh", "run65.sh", "run75.sh"]):
     """
     command.txt 파일을 읽어 각 줄을 줄 번호 % 4의 결과에 따라 
-    run4.sh, run5.sh, run6.sh, run7.sh 파일에 분배합니다.
+    output_files에 분배합니다.
     """
     
     print(f"입력 파일: {input_file}")
