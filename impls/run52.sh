@@ -1,2 +1,0 @@
-python test_agents.py --restore_path="./exp/OGBench/Debug/sd005_20251126_093839" --agent="agents/sshiql.py" --agent.stack_max_size=4 --agent.ensemble_mode="similarity" --agent.similarity_beta=7 --proc_name="Hum_Med_SS+Simi" ; \
-python test_agents.py --restore_path="./exp/OGBench/Debug/sd005_20251124_210427" --agent="agents/sshiql.py" --agent.stack_max_size=4 --agent.ensemble_mode="similarity" --agent.similarity_beta=7 --proc_name="Hum_Lar_SS+Simi" ; \
